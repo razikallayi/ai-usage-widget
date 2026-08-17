@@ -12,6 +12,12 @@ files:
   - assets/**/*
   - package.json
 
+# The collector runs as a spawned child process and shells out to a PowerShell
+# script to find Antigravity's language server. PowerShell cannot read a file
+# from inside app.asar, so the collector has to exist as real files on disk.
+asarUnpack:
+  - collector/**/*
+
 win:
   target:
     - target: nsis

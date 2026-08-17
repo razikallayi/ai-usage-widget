@@ -16,12 +16,9 @@ Each tool hides its usage somewhere different — a web page, a settings panel, 
 so "am I about to hit my weekly limit?" meant checking four places. This puts all four on one small
 window that sits in the corner of the screen.
 
-## Screenshot
+![The widget in wide mode, showing all four sources side by side](assets/screenshot.png)
 
-<!-- Add a screenshot here. IMPORTANT: capture it in demo mode (see "Demo mode" below).
-     A live capture renders your real GitHub login and your real plan name. -->
-
-_Coming soon._
+*Wide mode — all four sources at once. There is also a narrow single-tab mode for parking in a corner.*
 
 ## Features
 
@@ -48,7 +45,7 @@ _Coming soon._
 
 Two processes:
 
-```
+```text
 ┌─────────────────────────┐         ┌──────────────────────────────┐
 │  Electron widget        │  HTTP   │  Local collector             │
 │  (renderer + tray)      ├────────▶│  127.0.0.1:8787              │
@@ -242,7 +239,7 @@ the page renderers were written against it.
 
 ## Project layout
 
-```
+```text
 collector/          zero-dependency Node HTTP server
   sources/          one module per data source, each independently failable
   server.js         scheduling, per-source backoff, /v1/summary + /health

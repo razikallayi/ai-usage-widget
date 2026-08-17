@@ -34,7 +34,12 @@ function startCollector(config) {
   const token = prepareCollectorConfig(config);
   if (child || config.get('collectorAutoStart') === false) return;
 
-  const entry = path.join(__dirname, '..', '..', 'collector', 'index.js');
+  // Point at the unpacked copy in a packaged build: the collector shells out to
+  // a PowerShell script that cannot be read from inside app.asar, so the whole
+  // directory is unpacked and the child must resolve to the same real files.
+  // No-op when running from source.
+  const entry = path.join(__dirname, '..', '..', 'collector', 'index.js')
+    .replace(/\bapp\.asar\b(?!\.unpacked)/, 'app.asar.unpacked');
   // NODE_NO_WARNINGS silences the node:sqlite ExperimentalWarning that the
   // Antigravity source triggers on Electron's Node 22.
   const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_NO_WARNINGS: '1' };

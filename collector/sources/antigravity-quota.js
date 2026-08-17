@@ -1,7 +1,15 @@
 const { execFile } = require('child_process');
 const path = require('path');
 
-const SCRIPT = path.join(__dirname, '..', 'scripts', 'find-antigravity-ls.ps1');
+// PowerShell is an external process with no knowledge of asar, so in a packaged
+// build it cannot read this script from inside app.asar. electron-builder is
+// told to unpack collector/ (see asarUnpack in electron-builder.yml); this
+// rewrites the path to the real file on disk. The negative lookahead keeps it
+// idempotent - the collector is normally already spawned from the unpacked
+// directory, and rewriting twice yields app.asar.unpacked.unpacked. No-op when
+// running from source.
+const SCRIPT = path.join(__dirname, '..', 'scripts', 'find-antigravity-ls.ps1')
+  .replace(/\bapp\.asar\b(?!\.unpacked)/, 'app.asar.unpacked');
 const SERVICE = '/exa.language_server_pb.LanguageServerService/';
 
 // Antigravity's Settings > Models & Usage panel is fed by the language server

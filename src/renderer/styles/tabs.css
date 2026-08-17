@@ -1,0 +1,34 @@
+.tab-bar {
+  display: flex;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 2px 8px;
+  text-align: center;
+  /* Four tabs have to fit the 280px minimum window width. */
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  border-bottom-color: var(--accent, var(--text-primary));
+  color: var(--accent, var(--text-primary));
+}

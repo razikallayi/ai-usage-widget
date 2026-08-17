@@ -1,0 +1,7 @@
+{
+  "relayUrl": "https://your-relay.workers.dev",
+  "readToken": "your-read-token-here",
+  "pollIntervalMs": 20000,
+  "opacity": 0.92,
+  "alwaysOnTop": true
+}

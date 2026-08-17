@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Usage Widget</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/titlebar.css">
+  <link rel="stylesheet" href="styles/tabs.css">
+  <link rel="stylesheet" href="styles/gauges.css">
+  <link rel="stylesheet" href="styles/cards.css">
+  <link rel="stylesheet" href="styles/dashboard.css">
+  <link rel="stylesheet" href="styles/settings.css">
+  <link rel="stylesheet" href="styles/animations.css">
+</head>
+<body>
+  <div class="widget-shell">
+    <!-- Titlebar -->
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <div class="freshness-dot" id="freshness-dot"></div>
+        <span class="titlebar-title">AI Usage</span>
+        <span class="machine-badge" id="machine-badge">--</span>
+      </div>
+      <div class="titlebar-right">
+        <button class="titlebar-btn" id="btn-view" title="Toggle dashboard / tabs">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn" id="btn-settings" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn" id="btn-pin" title="Always on top">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn" id="btn-minimize" title="Minimize to tray">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="4" y1="12" x2="20" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab active" data-tab="claude" style="--accent: var(--claude-accent)">Claude</button>
+      <button class="tab" data-tab="codex" style="--accent: var(--codex-accent)">Codex</button>
+      <button class="tab" data-tab="copilot" style="--accent: var(--copilot-accent)">Copilot</button>
+      <button class="tab" data-tab="antigravity" style="--accent: var(--antigravity-accent)">Antigrav</button>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- Pages. In wide mode every column shows at once, side by side; in tabs
+         mode the wrappers collapse via display:contents so the page elements
+         lay out exactly as they did before, one at a time. -->
+    <div class="pages" id="pages">
+      <div class="page-col" style="--accent: var(--claude-accent)">
+        <div class="page-col-head">Claude</div>
+        <div class="page-content active" id="page-claude"></div>
+      </div>
+      <div class="page-col" style="--accent: var(--codex-accent)">
+        <div class="page-col-head">Codex</div>
+        <div class="page-content" id="page-codex"></div>
+      </div>
+      <div class="page-col" style="--accent: var(--copilot-accent)">
+        <div class="page-col-head">Copilot</div>
+        <div class="page-content" id="page-copilot"></div>
+      </div>
+      <div class="page-col" style="--accent: var(--antigravity-accent)">
+        <div class="page-col-head">Antigravity</div>
+        <div class="page-content" id="page-antigravity"></div>
+      </div>
+    </div>
+
+    <!-- Setup overlay -->
+    <div class="setup-overlay" id="setup-overlay">
+      <div class="setup-title">AI Usage Widget</div>
+      <div class="setup-desc">Configure your relay connection to display live AI usage data, or try demo mode to preview the widget.</div>
+      <button class="setup-btn primary" id="setup-settings-btn">Configure</button>
+      <button class="setup-btn secondary" id="setup-demo-btn">Try Demo Mode</button>
+    </div>
+
+    <!-- Settings modal -->
+    <div class="settings-modal hidden" id="settings-modal">
+      <div class="settings-panel">
+        <div class="settings-title">Settings</div>
+
+        <div class="settings-field">
+          <label class="settings-label" for="settings-relay-url">Relay URL</label>
+          <input class="settings-input" type="text" id="settings-relay-url" placeholder="https://your-relay.workers.dev">
+        </div>
+
+        <div class="settings-field">
+          <label class="settings-label" for="settings-read-token">Read Token</label>
+          <input class="settings-input" type="password" id="settings-read-token" placeholder="your-read-token">
+        </div>
+
+        <div class="settings-field">
+          <label class="settings-label" for="settings-poll-interval">Poll Interval (seconds)</label>
+          <input class="settings-input" type="number" id="settings-poll-interval" min="10" max="300" value="20">
+        </div>
+
+        <div class="settings-field">
+          <label class="settings-label">Opacity</label>
+          <div class="settings-range-row">
+            <input class="settings-range" type="range" id="settings-opacity" min="0.3" max="1" step="0.01" value="0.92">
+            <span class="settings-range-value" id="settings-opacity-value">92%</span>
+          </div>
+        </div>
+
+        <div class="settings-checkbox-row">
+          <input type="checkbox" id="settings-always-on-top" checked>
+          <label class="settings-checkbox-label" for="settings-always-on-top">Always on top</label>
+        </div>
+
+        <div class="settings-actions">
+          <button class="settings-btn cancel" id="settings-cancel">Cancel</button>
+          <button class="settings-btn save" id="settings-save">Save</button>
+        </div>
+
+        <div class="settings-version">v1.0.0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts (order matters: utilities first, then components, then pages, then orchestration) -->
+  <script src="scripts/formatters.js"></script>
+  <script src="scripts/gauge.js"></script>
+  <script src="scripts/progress-bar.js"></script>
+  <script src="scripts/sparkline.js"></script>
+  <script src="scripts/countdown.js"></script>
+  <script src="scripts/staleness.js"></script>
+  <script src="scripts/tabs.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/settings.js"></script>
+  <script src="scripts/pages/demo.js"></script>
+  <script src="scripts/pages/claude.js"></script>
+  <script src="scripts/pages/codex.js"></script>
+  <script src="scripts/pages/copilot.js"></script>
+  <script src="scripts/pages/antigravity.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>

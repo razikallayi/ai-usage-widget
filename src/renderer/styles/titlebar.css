@@ -1,0 +1,75 @@
+.titlebar {
+  height: 36px;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.freshness-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+.freshness-dot.good { background: var(--status-good); }
+.freshness-dot.warn { background: var(--status-warn); }
+.freshness-dot.bad { background: var(--status-bad); }
+
+.titlebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+.machine-badge {
+  font-size: 9px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  border: none;
+  background: none;
+  font-size: 14px;
+}
+.titlebar-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.titlebar-btn.active {
+  color: var(--claude-accent);
+}

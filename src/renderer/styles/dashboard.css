@@ -1,0 +1,70 @@
+/* Wide mode: every source shown at once as a horizontal column, each with the
+   same full detail it has in tabs mode.
+
+   In tabs mode the wrappers collapse with display:contents, so .page-content
+   remains a direct flex child of .widget-shell and behaves exactly as before -
+   no duplicate layout rules and nothing for the tab pages to know about. */
+
+.pages,
+.page-col {
+  display: contents;
+}
+
+.page-col-head {
+  display: none;
+}
+
+body.wide-mode .tab-bar {
+  display: none;
+}
+
+body.wide-mode .pages {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  /* Narrow windows scroll sideways rather than crushing the columns. */
+  overflow-x: auto;
+}
+
+body.wide-mode .page-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 230px;
+  min-height: 0;
+  border-right: 1px solid var(--border-subtle);
+}
+body.wide-mode .page-col:last-child {
+  border-right: none;
+}
+
+/* The tab bar is hidden in this mode, so each column names itself. */
+body.wide-mode .page-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 14px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+}
+body.wide-mode .page-col-head::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Every column is visible, each scrolling independently. */
+body.wide-mode .page-content {
+  display: flex !important;
+  padding: 12px 12px 10px;
+  gap: 10px;
+}

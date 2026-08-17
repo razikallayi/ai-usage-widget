@@ -1,0 +1,25 @@
+node_modules/
+
+# Build output
+dist/
+out/
+build/
+
+# Local state — generated per machine, never shared
+config.json
+collector-cache.json
+
+# Shortcuts embed absolute machine-specific paths
+*.lnk
+*.vbs
+
+# Private working notes
+CLAUDE.md
+
+# Local env
+.env
+.env.*
+
+.DS_Store
+Thumbs.db
+*.log

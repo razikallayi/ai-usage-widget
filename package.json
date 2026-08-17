@@ -1,0 +1,45 @@
+{
+  "name": "usage-widget",
+  "version": "1.0.0",
+  "description": "Always-on-top desktop widget showing live AI usage and quota for Claude, Codex, Copilot and Antigravity, read entirely from local sources",
+  "main": "src/main/main.js",
+  "author": "Razi Kallayi",
+  "license": "MIT",
+  "homepage": "https://github.com/razikallayi/ai-usage-widget#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razikallayi/ai-usage-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/razikallayi/ai-usage-widget/issues"
+  },
+  "keywords": [
+    "electron",
+    "widget",
+    "desktop",
+    "claude",
+    "claude-code",
+    "codex",
+    "copilot",
+    "antigravity",
+    "usage",
+    "quota",
+    "rate-limit"
+  ],
+  "scripts": {
+    "start": "node launch.js",
+    "dev": "node launch.js --dev",
+    "collector": "node collector/index.js",
+    "launcher": "powershell -ExecutionPolicy Bypass -File scripts/install-launcher.ps1",
+    "launcher:remove": "powershell -ExecutionPolicy Bypass -File scripts/uninstall-launcher.ps1",
+    "icon": "powershell -ExecutionPolicy Bypass -File scripts/make-icon.ps1",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.15.3"
+  }
+}

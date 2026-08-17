@@ -103,6 +103,40 @@ This reads credentials, so it is worth being precise about what happens to them:
 - All state stays on your machine, in `%APPDATA%/usage-widget/` — the config file and a parse cache.
   Both are gitignored.
 
+## Download
+
+Grab a single file from the [latest release](https://github.com/razikallayi/ai-usage-widget/releases/latest):
+
+| File | Use it if |
+|---|---|
+| **`AI Usage Widget Setup 1.0.0.exe`** | You want it installed properly — creates Start Menu and desktop shortcuts. Installs per-user, so no admin prompt. |
+| **`AI Usage Widget 1.0.0.exe`** | You just want to try it. Portable, nothing installed, no shortcuts. |
+
+Nothing to configure — it detects your tools on first launch (see
+[Setting up on a new PC](#setting-up-on-a-new-pc)). It starts in the system tray, so if no window
+appears, look there.
+
+> Windows may show a SmartScreen warning ("unknown publisher") because these builds are not code
+> signed — a certificate costs a few hundred dollars a year. Choose *More info → Run anyway*, or
+> build it yourself from source with `npm run dist:win` if you would rather not trust a binary.
+
+## Setting up on a new PC
+
+There is no configuration step. On first launch the app generates its own local token, starts its
+collector, and finds everything by looking in the standard per-user locations — so it picks up
+whichever account is signed in on that machine:
+
+| Source | Detected from |
+|---|---|
+| Claude | `~/.claude/.credentials.json` and `~/.claude/projects/` — whatever Claude Code is signed into |
+| Codex | `~/.codex/sessions/` |
+| Copilot | `gh auth token`, i.e. whichever GitHub account the CLI is logged into. `gh` is found on `PATH` or in its standard install directories |
+| Antigravity | Its language server, discovered live each cycle — the port and token change every launch, so nothing is remembered |
+
+No paths, usernames, tokens or machine names are baked into the build. Anything you have not
+installed simply leaves its section empty, and its own settings live in `%APPDATA%/usage-widget/` on
+that machine.
+
 ## Requirements
 
 - Windows 10/11

@@ -20,8 +20,11 @@ asarUnpack:
 
 win:
   target:
+    # x64 only. A dual-arch NSIS bundle doubles the download to ~160MB for
+    # every user, most of it an Electron runtime they cannot run. Ship arm64 as
+    # its own asset if it is ever needed.
     - target: nsis
-      arch: [x64, arm64]
+      arch: [x64]
     - target: portable
       arch: [x64]
   icon: assets/icon.ico

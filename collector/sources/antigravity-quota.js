@@ -57,7 +57,10 @@ async function rpc(endpoint, method, body = {}) {
       'Content-Type': 'application/json',
       'x-codeium-csrf-token': endpoint.csrfToken
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    // Localhost, so a slow answer means a wrong port or a wedged language
+    // server - fail fast and let resolveEndpoint() try the other one.
+    signal: AbortSignal.timeout(5000)
   });
   if (!res.ok) throw new Error(method + ' returned ' + res.status);
   return res.json();

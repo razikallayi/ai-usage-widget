@@ -9,6 +9,7 @@ class App {
     this.pages = [];
     this.viewMode = 'tabs';
     this.isDemo = false;
+    this.manualRefreshBusy = false;
   }
 
   async init() {
@@ -50,6 +51,7 @@ class App {
     });
 
     document.getElementById('btn-settings')?.addEventListener('click', () => this.settings.open());
+    document.getElementById('btn-refresh')?.addEventListener('click', () => this.manualRefresh());
     document.getElementById('btn-minimize')?.addEventListener('click', () => window.widget.minimize());
     document.getElementById('btn-pin')?.addEventListener('click', async () => {
       const config = await window.widget.getConfig();
@@ -62,6 +64,11 @@ class App {
       window.widget.onAlwaysOnTopChange((val) => {
         document.getElementById('btn-pin')?.classList.toggle('active', val);
       });
+      // The window was just shown, or the machine woke up: close the gap now
+      // instead of waiting out a poll interval.
+      window.widget.onWake?.(() => {
+        if (!this.isDemo) this.poller.fetchOnce();
+      });
     }
 
     const config = await window.widget.getConfig();
@@ -72,6 +79,7 @@ class App {
     if (config.relayUrl && config.readToken) {
       this.hideSetup();
       this.poller.start(config.relayUrl, config.readToken, config.pollIntervalMs || 20000);
+      this.updateRefreshButton();
     } else {
       this.showSetup();
     }
@@ -101,6 +109,7 @@ class App {
     if (dot) {
       dot.className = 'freshness-dot ' + this.staleness.getWorstLevel();
     }
+    this.updateRefreshButton();
   }
 
   onTick() {
@@ -117,6 +126,7 @@ class App {
     if (dot) {
       dot.className = 'freshness-dot ' + this.staleness.getWorstLevel();
     }
+    this.updateRefreshButton();
   }
 
   onError(detail) {
@@ -125,6 +135,7 @@ class App {
       banner.textContent = detail.message;
       banner.classList.add('visible');
     }
+    this.updateRefreshButton();
   }
 
   hideError() {
@@ -171,9 +182,54 @@ class App {
 
     if (cfg.relayUrl && cfg.readToken) {
       this.poller.start(cfg.relayUrl, cfg.readToken, cfg.pollIntervalMs || 20000);
+      this.updateRefreshButton();
     } else {
       this.showSetup();
     }
+  }
+
+  async manualRefresh() {
+    if (this.manualRefreshBusy || this.isDemo) return;
+    const btn = document.getElementById('btn-refresh');
+    if (!btn) return;
+
+    this.manualRefreshBusy = true;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    try {
+      await this.poller.refreshNow();
+    } finally {
+      this.manualRefreshBusy = false;
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      this.updateRefreshButton();
+    }
+  }
+
+  updateRefreshButton() {
+    const btn = document.getElementById('btn-refresh');
+    if (!btn) return;
+    if (this.isDemo) {
+      btn.classList.remove('visible');
+      return;
+    }
+    if (!this.poller.relayUrl || !this.poller.readToken) {
+      btn.classList.remove('visible');
+      return;
+    }
+
+    const worst = this.staleness.getWorstLevel();
+    const seconds = this.poller.getSecondsSinceLastSuccess();
+    const stale = worst === 'bad';
+    // Three missed polls, not a fixed 90s - the poll interval is configurable.
+    const gapLimit = Math.max(90, (this.poller.intervalMs / 1000) * 3);
+    const disconnected = !!this.poller.error || (seconds != null && seconds >= gapLimit);
+
+    const show = stale || disconnected;
+    btn.classList.toggle('visible', show);
+    btn.title = stale
+      ? 'Data looks stale. Refresh now'
+      : 'Retry data fetch now';
   }
 }
 

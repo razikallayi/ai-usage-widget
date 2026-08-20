@@ -45,6 +45,14 @@ function ageSec(at) {
   return at ? Math.round((Date.now() - at) / 1000) : null;
 }
 
+function withTimeout(promise, ms, label) {
+  let timer = null;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(label + ' timed out after ' + ms + 'ms')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 class Collector {
   constructor({ port = 8787, refreshMs = 30000 } = {}) {
     this.port = port;
@@ -52,6 +60,8 @@ class Collector {
     this.cache = new Cache();
     this.server = null;
     this.timer = null;
+    this.refreshPromise = null;
+    this.forcePromise = null;
 
     // minMs throttles each source independently. The local file scans are
     // nearly free, but the two HTTP endpoints are rate limited - Anthropic's
@@ -60,15 +70,20 @@ class Collector {
     // nothing in accuracy.
     // persist: survive a collector restart. Only the rate-limited HTTP sources
     // need it - the local file scans re-derive their values in milliseconds.
+    // forceMinMs is the floor a manual refresh may drop to. It is never 0: the
+    // whole point of minMs is that oauth/usage 429s below a ~30s cadence, and a
+    // button that re-hits a throttled endpoint would blank the very gauge the
+    // user clicked it to restore. An active 429 backoff is honoured even here.
     this.state = {
-      claudeLimits: { value: null, at: null, tried: 0, minMs: 120000, backoffMs: 0, persist: true },
-      claudeTokens: { value: null, at: null, tried: 0, minMs: 30000, backoffMs: 0 },
-      codex: { value: null, at: null, tried: 0, minMs: 30000, backoffMs: 0, sourceAgeSec: null },
-      copilot: { value: null, at: null, tried: 0, minMs: 300000, backoffMs: 0, persist: true },
-      antigravity: { value: null, at: null, tried: 0, minMs: 60000, backoffMs: 0 },
-      antigravityQuota: { value: null, at: null, tried: 0, minMs: 120000, backoffMs: 0 }
+      claudeLimits: { value: null, at: null, tried: 0, minMs: 120000, forceMinMs: 30000, backoffMs: 0, maxMs: 15000, persist: true },
+      claudeTokens: { value: null, at: null, tried: 0, minMs: 30000, forceMinMs: 3000, backoffMs: 0, maxMs: 20000 },
+      codex: { value: null, at: null, tried: 0, minMs: 30000, forceMinMs: 3000, backoffMs: 0, maxMs: 20000, sourceAgeSec: null },
+      copilot: { value: null, at: null, tried: 0, minMs: 300000, forceMinMs: 60000, backoffMs: 0, maxMs: 15000, persist: true },
+      antigravity: { value: null, at: null, tried: 0, minMs: 60000, forceMinMs: 5000, backoffMs: 0, maxMs: 20000 },
+      antigravityQuota: { value: null, at: null, tried: 0, minMs: 120000, forceMinMs: 15000, backoffMs: 0, maxMs: 20000 }
     };
     this.warnings = [];
+    this.warningMap = {};
     this.restoreSnapshots();
   }
 
@@ -88,23 +103,51 @@ class Collector {
     }
   }
 
-  async refresh() {
-    const warnings = [];
+  // Only one cycle of each kind may be in flight. Forced and scheduled cycles
+  // are tracked separately so a click during a scheduled refresh does not queue
+  // a second full pass at every rate-limited endpoint - but two clicks in a row
+  // share one cycle rather than doubling up.
+  refresh({ force = false } = {}) {
+    const field = force ? 'forcePromise' : 'refreshPromise';
+    if (this[field]) return this[field];
+
+    const current = this.refreshInternal({ force }).finally(() => {
+      if (this[field] === current) this[field] = null;
+    });
+    this[field] = current;
+    return current;
+  }
+
+  async refreshInternal({ force = false } = {}) {
+    const skipped = [];
     const now = Date.now();
 
     // key indexes this.state; name is what the user sees in warnings[].
     const run = async (name, key, fn) => {
       const slot = this.state[key];
-      const wait = slot.backoffMs || slot.minMs;
-      if (slot.tried && now - slot.tried < wait) return;
+      // Backoff always wins, force or not: a source is only in backoff because
+      // it already answered 429, and asking again is what deepens the hole.
+      const wait = slot.backoffMs || (force ? (slot.forceMinMs ?? 15000) : slot.minMs);
+      if (slot.tried && now - slot.tried < wait) {
+        if (force) {
+          skipped.push({
+            key,
+            name,
+            reason: slot.backoffMs ? 'backoff' : 'throttled',
+            retryInSec: Math.max(0, Math.round((slot.tried + wait - now) / 1000))
+          });
+        }
+        return;
+      }
       slot.tried = now;
       try {
-        const value = await fn();
+        const value = await withTimeout(Promise.resolve().then(fn), slot.maxMs || 15000, name);
         slot.value = value;
         slot.at = Date.now();
         slot.backoffMs = 0;
         slot.error = null;
         slot.reconnect = false;
+        delete this.warningMap[key];
         if (slot.persist) {
           const snaps = this.cache.data.snapshots || (this.cache.data.snapshots = {});
           snaps[key] = { value, at: slot.at };
@@ -114,7 +157,10 @@ class Collector {
         // The last good value is deliberately kept: a transient failure should
         // make the section age, not blank out. Rate limits back off
         // exponentially so a throttled endpoint is not hammered further.
-        warnings.push(name + ': ' + err.message);
+        // Keyed by source and cleared only on success, so a warning survives
+        // the cycles where its source is merely throttled - a forced cycle that
+        // skips five of six sources must not look like five sources recovered.
+        this.warningMap[key] = name + ': ' + err.message;
         // Surfaced to the UI so it can say what to do about it, rather than
         // just showing an empty panel.
         slot.error = err.message;
@@ -138,8 +184,9 @@ class Collector {
       run('antigravity.quota', 'antigravityQuota', () => collectAntigravityQuota())
     ]);
 
-    this.warnings = warnings;
+    this.warnings = Object.values(this.warningMap);
     this.cache.flush();
+    return { skipped };
   }
 
   // Mirrors the shape in src/renderer/scripts/pages/demo.js, which is the
@@ -201,7 +248,7 @@ class Collector {
     };
   }
 
-  handle(req, res, token) {
+  async handle(req, res, token) {
     const url = (req.url || '').split('?')[0];
 
     if (url === '/health') {
@@ -216,8 +263,8 @@ class Collector {
           lastTrySec: slot.tried ? Math.round((now - slot.tried) / 1000) : null,
           minSec: slot.minMs / 1000,
           backoffSec: slot.backoffMs ? slot.backoffMs / 1000 : 0,
-          // Survives the throttle window, unlike warnings[] which is rebuilt
-          // each refresh and is empty while a source is merely backing off.
+          // Sticky per source, so it survives cycles where the source was
+          // skipped entirely; warnings[] is now keyed the same way.
           lastError: slot.error || null
         };
       }
@@ -226,7 +273,7 @@ class Collector {
       return;
     }
 
-    if (url !== '/v1/summary') {
+    if (url !== '/v1/summary' && url !== '/v1/refresh') {
       res.writeHead(404).end();
       return;
     }
@@ -242,6 +289,20 @@ class Collector {
       return;
     }
 
+    if (url === '/v1/refresh') {
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'method-not-allowed' }));
+        return;
+      }
+      // skipped[] names the sources left alone and when they can be retried,
+      // so the widget can explain a click that visibly changed nothing.
+      const { skipped } = await this.refresh({ force: true });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ ok: true, warnings: this.warnings, skipped }));
+      return;
+    }
+
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify(this.snapshot()));
   }
@@ -254,7 +315,12 @@ class Collector {
       this.refresh().catch(err => console.error('refresh failed:', err.message));
     }, this.refreshMs);
 
-    this.server = http.createServer((req, res) => this.handle(req, res, token));
+    this.server = http.createServer((req, res) => {
+      this.handle(req, res, token).catch(err => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message || 'internal-error' }));
+      });
+    });
 
     try {
       await new Promise((resolve, reject) => {

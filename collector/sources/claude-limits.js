@@ -35,7 +35,10 @@ async function fetchClaudeLimits() {
       'Authorization': 'Bearer ' + token,
       'anthropic-beta': 'oauth-2025-04-20',
       'Accept': 'application/json'
-    }
+    },
+    // Without this a hung socket sits here for undici's 300s default, which
+    // stalls the whole refresh cycle behind one unreachable endpoint.
+    signal: AbortSignal.timeout(12000)
   });
 
   if (res.status === 401 || res.status === 403) {

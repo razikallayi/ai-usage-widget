@@ -14,4 +14,7 @@ contextBridge.exposeInMainWorld('widget', {
   onShowSettings: (callback) => ipcRenderer.on('show-settings', callback),
   onOpacityChange: (callback) => ipcRenderer.on('opacity-change', (_, val) => callback(val)),
   onAlwaysOnTopChange: (callback) => ipcRenderer.on('always-on-top-change', (_, val) => callback(val)),
+  // Fired on window show/restore/focus and on system resume/unlock, so the
+  // poller can close the gap immediately instead of waiting for its interval.
+  onWake: (callback) => ipcRenderer.on('widget:wake', () => callback()),
 });

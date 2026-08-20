@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen } = require('electron');
+const { app, BrowserWindow, screen, powerMonitor } = require('electron');
 const path = require('path');
 const Config = require('./config');
 const { registerIpcHandlers } = require('./ipc-handlers');
@@ -66,6 +66,14 @@ function ensureOnScreen(target) {
   target.setBounds({ x, y, width, height });
 }
 
+// Tell the renderer to fetch now rather than on its own schedule. Safe to call
+// often - ApiPoller.fetchOnce() self-guards against overlapping requests.
+function wake() {
+  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+    win.webContents.send('widget:wake');
+  }
+}
+
 function createWindow() {
   config = new Config();
   // Before the window loads: this may set relayUrl/readToken, which the
@@ -97,6 +105,12 @@ function createWindow() {
       preload: path.join(__dirname, '..', 'renderer', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Load-bearing. This widget hides to the tray on close AND on minimize,
+      // and Chromium throttles a hidden page's timers to ~1/min after five
+      // minutes, then freezes the page outright. ApiPoller's setInterval is the
+      // only thing driving fetches, so without this the widget silently stops
+      // updating whenever it has been out of sight for a while.
+      backgroundThrottling: false,
     }
   });
 
@@ -125,6 +139,13 @@ function createWindow() {
       win.hide();
     }
   });
+
+  // Push-based catch-up. Even with backgroundThrottling off, a machine that
+  // slept has a real gap in its timeline, and the renderer should not wait out
+  // a whole poll interval before showing current numbers.
+  win.on('show', wake);
+  win.on('restore', wake);
+  win.on('focus', wake);
 
   registerIpcHandlers(win, config, {
     getViewMode: () => viewMode,
@@ -169,7 +190,12 @@ app.on('second-instance', () => {
   }
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  // Sleep and screen-lock are the two gaps no in-page timer can cover.
+  powerMonitor.on('resume', wake);
+  powerMonitor.on('unlock-screen', wake);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

@@ -76,8 +76,8 @@ Grab a single file from the [latest release](https://github.com/razikallayi/ai-u
 
 | File | Use it if |
 |---|---|
-| **`AI.Usage.Widget.Setup.1.0.1.exe`** | You want it installed — creates Start Menu and desktop shortcuts. Per-user, so no admin prompt. |
-| **`AI.Usage.Widget.1.0.1.exe`** | You just want to try it. Portable, installs nothing. |
+| **`AI.Usage.Widget.Setup.1.1.0.exe`** | You want it installed — creates Start Menu and desktop shortcuts. Per-user, so no admin prompt. |
+| **`AI.Usage.Widget.1.1.0.exe`** | You just want to try it. Portable, installs nothing. |
 
 It starts in the **system tray**, so if no window appears, look there.
 

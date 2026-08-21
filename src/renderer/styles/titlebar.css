@@ -14,6 +14,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  /* Give way to the buttons rather than wrapping. At a high UI scale the
+     titlebar gets tight, and "AI Usage" breaking onto two lines pushed the
+     whole bar to double height. */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .freshness-dot {
@@ -33,9 +38,14 @@
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .machine-badge {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 9px;
   background: var(--bg-elevated);
   color: var(--text-muted);
@@ -49,7 +59,18 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
   -webkit-app-region: no-drag;
+}
+
+/* Below ~300 CSS px the titlebar cannot hold the buttons, the title and the
+   badge. The badge is flex-shrink:0, so it does not ellipsize - it just gets
+   sliced mid-word by .titlebar-left's overflow ("1 ma"), which reads as a bug.
+   Drop it instead; the count is the least load-bearing thing in the bar. Note
+   this is a CSS-px threshold, so it tracks uiScale automatically: a 636 DIP
+   phone window hits it at 2.5x but not at 1.75x. */
+@media (max-width: 300px) {
+  .machine-badge { display: none; }
 }
 
 .titlebar-btn {
@@ -72,6 +93,28 @@
 }
 .titlebar-btn.active {
   color: var(--claude-accent);
+}
+
+/* Two more buttons would crowd the titlebar of a 280px-wide desktop widget, so
+   they only appear where they earn their place: once the UI is scaled at all,
+   and on a portrait screen - a phone mirrored over spacedesk, where they are
+   visible from the start so there is always a tappable way in and back out. */
+.scale-btn {
+  display: none;
+}
+body.scaled .scale-btn {
+  display: flex;
+}
+@media (max-aspect-ratio: 4/5) {
+  .scale-btn { display: flex; }
+}
+.scale-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.scale-btn:disabled:hover {
+  background: none;
+  color: var(--text-muted);
 }
 
 #btn-refresh {

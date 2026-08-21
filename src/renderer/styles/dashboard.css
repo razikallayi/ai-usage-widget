@@ -68,3 +68,33 @@ body.wide-mode .page-content {
   padding: 12px 12px 10px;
   gap: 10px;
 }
+
+/* A portrait screen - a phone mirrored over spacedesk - cannot hold four 230px
+   columns side by side. Flow them top to bottom instead, as one scrolling list.
+
+   Aspect ratio rather than max-width on purpose: it is the only signal that is
+   invariant under the zoom factor, since both dimensions shrink together, so
+   the trigger does not move as uiScale changes. 4/5 is deliberately generous -
+   a phone sits near 0.45 so it always stacks, while a squarish 800x900 desktop
+   window (0.89) keeps its columns. */
+@media (max-aspect-ratio: 4/5) {
+  body.wide-mode .pages {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body.wide-mode .page-col {
+    min-width: 0;
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  /* Each section sizes to its content and the whole list scrolls as one. Four
+     independently scrolling panes stacked on a touch screen is unusable. */
+  body.wide-mode .page-content {
+    flex: 0 0 auto;
+    overflow-y: visible;
+  }
+}

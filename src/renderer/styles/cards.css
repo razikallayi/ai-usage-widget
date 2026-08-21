@@ -66,11 +66,22 @@
 .spark-caption {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font-size: 9px;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+  white-space: nowrap;
+}
+/* The title gives way; the peak value on the right is the number worth reading. */
+.spark-caption > :first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spark-caption > :last-child {
+  flex-shrink: 0;
 }
 
 .sparkline {
@@ -102,17 +113,27 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 8px;
   font-size: 12px;
 }
 
+/* A flex item's default min-width:auto refuses to shrink below its content, so
+   on a narrow window the label used to shove the number off the right edge
+   instead of giving way. The number is the point of the row, so the label is
+   what truncates. */
 .card-row-label {
   color: var(--text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-row-value {
   color: var(--text-primary);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .card-row-secondary {

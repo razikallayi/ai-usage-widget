@@ -80,18 +80,26 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 8px;
   font-size: 11px;
 }
 
+/* Same reasoning as .card-row-label: without min-width:0 a long model name
+   pushes its percentage off the edge of a narrow window. */
 .progress-label {
   color: var(--text-muted);
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .progress-value {
   color: var(--text-primary);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .progress-bar-track {

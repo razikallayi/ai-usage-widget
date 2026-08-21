@@ -10,6 +10,8 @@ class App {
     this.viewMode = 'tabs';
     this.isDemo = false;
     this.manualRefreshBusy = false;
+    // Mirrors main.js's clamp; the main process is still the authority.
+    this.uiScale = 1;
   }
 
   async init() {
@@ -50,6 +52,9 @@ class App {
       this.setViewMode(this.viewMode === 'wide' ? 'tabs' : 'wide');
     });
 
+    document.getElementById('btn-scale-up')?.addEventListener('click', () => this.stepScale(0.25));
+    document.getElementById('btn-scale-down')?.addEventListener('click', () => this.stepScale(-0.25));
+
     document.getElementById('btn-settings')?.addEventListener('click', () => this.settings.open());
     document.getElementById('btn-refresh')?.addEventListener('click', () => this.manualRefresh());
     document.getElementById('btn-minimize')?.addEventListener('click', () => window.widget.minimize());
@@ -64,6 +69,9 @@ class App {
       window.widget.onAlwaysOnTopChange((val) => {
         document.getElementById('btn-pin')?.classList.toggle('active', val);
       });
+      // The scale can change from the tray or Ctrl +/- as well as from here,
+      // so the titlebar and the settings slider follow main rather than lead it.
+      window.widget.onUiScaleChange?.((val) => this.applyUiScale(val));
       // The window was just shown, or the machine woke up: close the gap now
       // instead of waiting out a poll interval.
       window.widget.onWake?.(() => {
@@ -73,6 +81,8 @@ class App {
 
     const config = await window.widget.getConfig();
     document.getElementById('btn-pin')?.classList.toggle('active', config.alwaysOnTop !== false);
+    // Cosmetic only - main already applied the zoom on did-finish-load.
+    this.applyUiScale(config.uiScale || 1);
     // persist:false - main.js already sized the window for the saved mode.
     this.setViewMode(config.viewMode === 'wide' ? 'wide' : 'tabs', { persist: false });
 
@@ -93,6 +103,30 @@ class App {
     document.getElementById('btn-view')?.classList.toggle('active', this.viewMode === 'wide');
 
     if (persist) window.widget.setViewMode(this.viewMode);
+  }
+
+  // Cosmetic sync only: the zoom itself is applied in the main process, which
+  // also owns the clamp and the matching window minimum size.
+  applyUiScale(scale) {
+    this.uiScale = scale;
+    document.body.classList.toggle('scaled', Math.abs(scale - 1) > 0.001);
+
+    const down = document.getElementById('btn-scale-down');
+    const up = document.getElementById('btn-scale-up');
+    if (down) down.disabled = scale <= 0.75 + 0.001;
+    if (up) up.disabled = scale >= 3 - 0.001;
+
+    // Keep the slider honest if the change came from the tray or the keyboard
+    // while the modal happens to be open.
+    const slider = document.getElementById('settings-ui-scale');
+    const value = document.getElementById('settings-ui-scale-value');
+    if (slider) slider.value = scale;
+    if (value) value.textContent = Math.round(scale * 100) + '%';
+  }
+
+  stepScale(delta) {
+    const next = Math.min(3, Math.max(0.75, this.uiScale + delta));
+    window.widget?.setUiScale(next);
   }
 
   onData(data) {

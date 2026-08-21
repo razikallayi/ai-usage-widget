@@ -23,6 +23,20 @@
         <span class="machine-badge" id="machine-badge">--</span>
       </div>
       <div class="titlebar-right">
+        <!-- Tap targets for a mirrored screen, where the settings modal and the
+             keyboard are both awkward to reach. Hidden on a landscape desktop at
+             100% so the compact widget keeps a clean titlebar - see titlebar.css. -->
+        <button class="titlebar-btn scale-btn" id="btn-scale-down" title="Smaller (Ctrl+-)" aria-label="Decrease UI scale">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn scale-btn" id="btn-scale-up" title="Bigger (Ctrl+=)" aria-label="Increase UI scale">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
         <button class="titlebar-btn" id="btn-view" title="Toggle dashboard / tabs">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -123,6 +137,14 @@
           <div class="settings-range-row">
             <input class="settings-range" type="range" id="settings-opacity" min="0.3" max="1" step="0.01" value="0.92">
             <span class="settings-range-value" id="settings-opacity-value">92%</span>
+          </div>
+        </div>
+
+        <div class="settings-field">
+          <label class="settings-label">UI Scale</label>
+          <div class="settings-range-row">
+            <input class="settings-range" type="range" id="settings-ui-scale" min="0.75" max="3" step="0.05" value="1">
+            <span class="settings-range-value" id="settings-ui-scale-value">100%</span>
           </div>
         </div>
 

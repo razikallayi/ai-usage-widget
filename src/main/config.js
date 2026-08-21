@@ -8,6 +8,10 @@ const DEFAULTS = {
   pollIntervalMs: 20000,
   opacity: 1,
   alwaysOnTop: true,
+  // Chromium zoom factor, 0.75-3. Every dimension in the renderer is a
+  // hardcoded px, so this is the only knob that scales the gauges, the bars and
+  // the text together - which is what a screen mirrored to a phone needs.
+  uiScale: 1,
   viewMode: 'wide',
   // Each mode keeps its own geometry: a single tab wants a narrow column, four
   // side-by-side columns want a wide one, and switching should not destroy the

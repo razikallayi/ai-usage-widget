@@ -2,6 +2,8 @@ class SettingsController {
   constructor() {
     this.modal = document.getElementById('settings-modal');
     this.onSave = null;
+    // The scale in force when the modal opened, so Cancel can undo a preview.
+    this._scaleOnOpen = null;
   }
 
   init() {
@@ -12,6 +14,16 @@ class SettingsController {
     const opacityValue = document.getElementById('settings-opacity-value');
     opacitySlider.addEventListener('input', () => {
       opacityValue.textContent = Math.round(opacitySlider.value * 100) + '%';
+    });
+
+    // Unlike opacity, this previews live: picking a scale from a number is
+    // guesswork, and the whole point is seeing whether it is readable.
+    const scaleSlider = document.getElementById('settings-ui-scale');
+    const scaleValue = document.getElementById('settings-ui-scale-value');
+    scaleSlider.addEventListener('input', () => {
+      const scale = parseFloat(scaleSlider.value);
+      scaleValue.textContent = Math.round(scale * 100) + '%';
+      window.widget?.setUiScale(scale);
     });
 
     document.addEventListener('keydown', (e) => {
@@ -35,10 +47,23 @@ class SettingsController {
     document.getElementById('settings-opacity-value').textContent = Math.round((config.opacity || 0.92) * 100) + '%';
     document.getElementById('settings-always-on-top').checked = config.alwaysOnTop !== false;
 
+    const scale = config.uiScale || 1;
+    this._scaleOnOpen = scale;
+    document.getElementById('settings-ui-scale').value = scale;
+    document.getElementById('settings-ui-scale-value').textContent = Math.round(scale * 100) + '%';
+
     this.modal.classList.remove('hidden');
   }
 
-  close() {
+  // Cancel and Escape both undo the live scale preview; only save() keeps it.
+  close({ revert = true } = {}) {
+    if (revert && this._scaleOnOpen != null) {
+      const slider = document.getElementById('settings-ui-scale');
+      if (parseFloat(slider.value) !== this._scaleOnOpen) {
+        window.widget?.setUiScale(this._scaleOnOpen);
+      }
+    }
+    this._scaleOnOpen = null;
     this.modal.classList.add('hidden');
   }
 
@@ -48,6 +73,7 @@ class SettingsController {
     const pollInterval = parseInt(document.getElementById('settings-poll-interval').value) || 20;
     const opacity = parseFloat(document.getElementById('settings-opacity').value);
     const alwaysOnTop = document.getElementById('settings-always-on-top').checked;
+    const uiScale = parseFloat(document.getElementById('settings-ui-scale').value) || 1;
 
     // Remote relays must be https, but the bundled collector is plain http on
     // loopback - the traffic never leaves the machine.
@@ -64,10 +90,12 @@ class SettingsController {
     await window.widget.setConfig('pollIntervalMs', Math.max(10, Math.min(300, pollInterval)) * 1000);
     await window.widget.setOpacity(opacity);
     await window.widget.setAlwaysOnTop(alwaysOnTop);
+    // Already applied live by the input handler; this pins it as the new baseline.
+    await window.widget.setUiScale(uiScale);
 
-    this.close();
+    this.close({ revert: false });
 
-    if (this.onSave) this.onSave({ relayUrl, readToken, pollIntervalMs: pollInterval * 1000, opacity, alwaysOnTop });
+    if (this.onSave) this.onSave({ relayUrl, readToken, pollIntervalMs: pollInterval * 1000, opacity, alwaysOnTop, uiScale });
   }
 }
 

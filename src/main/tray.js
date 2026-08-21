@@ -3,7 +3,10 @@ const path = require('path');
 
 let tray = null;
 
-function createTray(win, config) {
+// The tray is the escape hatch for a window that is half off-screen, or on a
+// display too small for the geometry it was given - the two cases where the
+// titlebar buttons are exactly what you cannot reach.
+function createTray(win, config, actions = {}) {
   const iconPath = path.join(__dirname, '..', '..', 'assets', 'tray-icon.png');
   let icon;
   try {
@@ -20,6 +23,7 @@ function createTray(win, config) {
     const isVisible = win.isVisible();
     const isOnTop = config.get('alwaysOnTop');
     const currentOpacity = config.get('opacity');
+    const currentScale = config.get('uiScale') || 1;
 
     return Menu.buildFromTemplate([
       {
@@ -49,6 +53,23 @@ function createTray(win, config) {
             win.webContents.send('opacity-change', val);
           }
         }))
+      },
+      {
+        label: 'Scale',
+        submenu: [1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0].map(val => ({
+          label: `${Math.round(val * 100)}%`,
+          type: 'radio',
+          checked: Math.abs(currentScale - val) < 0.03,
+          // applyUiScale persists and pushes ui-scale-change to the renderer.
+          click: () => actions.applyUiScale?.(val)
+        }))
+      },
+      {
+        label: 'Fit to This Display',
+        click: () => {
+          win.show();
+          actions.fitToDisplay?.();
+        }
       },
       { type: 'separator' },
       {

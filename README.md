@@ -215,6 +215,7 @@ Settings are in the in-app modal (gear icon, or the tray menu), persisted to
 |---|---|---|
 | `viewMode` | `wide` | `tabs` or `wide` |
 | `opacity` | `1` | Window opacity |
+| `uiScale` | `1` | Zoom factor for the whole UI, 0.75–3 (Ctrl +/−, or the tray) |
 | `alwaysOnTop` | `true` | Keep above other windows |
 | `pollIntervalMs` | `20000` | How often the widget re-polls the collector |
 | `collectorAutoStart` | `true` | Set `false` to run the collector yourself |

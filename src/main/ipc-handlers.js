@@ -11,6 +11,9 @@ function registerIpcHandlers(win, config, view = {}) {
     if (key === 'alwaysOnTop') {
       win.setAlwaysOnTop(!!value);
     }
+    if (key === 'uiScale') {
+      view.applyUiScale?.(value);
+    }
     return true;
   });
 
@@ -27,6 +30,15 @@ function registerIpcHandlers(win, config, view = {}) {
   ipcMain.handle('window:setAlwaysOnTop', (_, value) => {
     win.setAlwaysOnTop(!!value);
     config.set('alwaysOnTop', !!value);
+  });
+
+  // Owned by main.js: the zoom factor also drives the window's minimum size,
+  // which the renderer cannot set. Returns the clamped value so the caller can
+  // reflect what actually took effect.
+  ipcMain.handle('window:setUiScale', (_, value) => view.applyUiScale?.(value) ?? value);
+
+  ipcMain.handle('window:fitToDisplay', () => {
+    view.fitToDisplay?.();
   });
 
   // Owned by main.js: switching modes also swaps the window geometry, which
